@@ -19,7 +19,20 @@ ggplot(Orange, aes(y = age, x = Tree)) + geom_boxplot(notch = T)
 ggplot(Orange, aes(y = age, x = Tree, fill = Tree)) +  geom_boxplot() 
 
 
-# Histograma
+#Gráfico de barras
+ggplot(Orange, aes(x = Tree)) +
+  geom_bar() +
+  labs(x = "Tree", y = "age") +
+  theme_minimal()
+
+#Gráfico de dispersão
+plot
+plot(Orange$circumference, Orange$age, 
+  xlab  = "Circumference", ylab = "Age", 
+  main = "Gráfico de Dispersão de Circumference vs. Age")
+
+
+    # Histograma
 
 Orange %>% ggplot(aes(x = age)) + geom_histogram()
 
