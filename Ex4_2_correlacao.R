@@ -2,18 +2,19 @@
 # PRIMEIRO, VAMOS CARREGAR OS PACOTES
 pacman::p_load(corrplot, dplyr, ggplot2)
 
-# BASE DE DADOS IRIS SEM AS ESPÉCIES #
-iris2 <- iris %>% select(-Species)
+# BASE DE DADOS Orange SEM AS Tree #
+
+Orange2 <- Orange %>% select(-Tree)
 
 # TABELA DE CORRELAÇÃO COM TODAS AS VARIÁVEIS #
-cor(iris2)
+cor(Orange2)
 
 # GRÁFICOS DE DISPERSÃO PAREADOS DAS VARIÁVEIS #
-pairs(iris2)
+pairs(Orange2)
 
 # CORRPLOT DAS VARIÁVEIS #
-irisCor <- cor(iris2)
-corrplot(irisCor, method = "number", order = 'alphabet')
-corrplot(irisCor, order = 'alphabet') 
-corrplot(irisCor, method = "square", order = 'AOE')
+OrangeCor <- cor(Orange2)
+corrplot(OrangeCor, method = "number", order = 'alphabet')
+corrplot(OrangeCor, order = 'alphabet') 
+corrplot(OrangeCor, method = "square", order = 'AOE')
 
