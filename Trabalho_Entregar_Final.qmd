@@ -1,0 +1,454 @@
+---
+title: "VAREJÃO TABAJARA"
+author: "Carlos Valber, Debora Rodrigues, Paulo Almeida e Luiz Henrique"
+format: 
+  html:
+    theme: Flatly
+editor: visual
+title-block-banner: true
+---
+
+![](Varejão.png){fig-align="left" width="223"}
+
+# **Análise Comparativa de Vendas no Primeiro Dia do Ano**
+
+## **Introdução**
+
+Neste relatório, realizamos uma análise dos dados de vendas correspondentes ao primeiro dia útil de janeiro dos anos de 2020, 2021, 2022 e 2023. Apresentando uma projeção de vendas para o ano de 2024, fundamentadas nas tendências identificadas nos anos precedentes.
+
+## Base de Dados
+
+### **Colunas utilizadas na base de dados do cliente**
+
+```{r}
+#| echo: false
+#| warning: false
+### Regras de Associação 
+pacman::p_load(
+  arules, arulesCBA, arulesViz, caret, dplyr, corrplot, plotly, ggplot2, ggplotly
+)
+
+# Lê o arquivo CSV e cria o DataFrame
+caminho_arquivo <- "C:/Users/Paulo Almeida/Desktop/fafire/2023/EstatisticaComputacionalR/git/controleVersao/BasesEx/Base_Jan_20_23_novo.csv"
+
+# Lê o arquivo CSV e cria o DataFrame
+dados_df <- read.csv(caminho_arquivo, sep = ";")
+
+# Idetificando o  nomes das colunas
+nomes_colunas <- names(dados_df)
+print(nomes_colunas)
+
+# Excluindo as variáveis que não serão analisadas
+dados_df2 <- dados_df %>% select(-CODFISCAL, -SITTRIBUT) 
+
+# CRIANDO DATAFRAME 3 (FILIAL, TOTAL)
+dados_df3 <- dados_df %>% select(FILIAL, TOTAL, DESCRICAO)
+
+# Remove linhas com valores NA em PRECOVENDA
+dados_df3 <- dados_df3[!is.na(dados_df3$TOTAL),]
+
+# Substituir do Dataframe 'dados_df3' na coluna 'PRECOVENDA' é uma coluna numérica em formato de caracteres
+dados_df3$TOTAL <- as.numeric(gsub(",", ".", as.character(dados_df3$TOTAL)))
+
+```
+
+### **Correlação entre as tabelas: FILIAL, PRODUTO, USUARIO e TOTAL**
+
+```{r}
+#| echo: false
+#| warning: false
+# Tabela de correlaçao
+dados_df8 <- dados_df %>% select(FILIAL, PROD, USUARIO,TOTAL)
+dados_df8$TOTAL <- as.numeric(gsub(",", ".", as.character(dados_df8$TOTAL))) # Correção trocando o , por .#
+cor(dados_df8) 
+```
+
+### **Filiais analisadas**
+
+```{r}
+#| echo: false
+#| warning: false
+unique(dados_df3$FILIAL)
+```
+
+```{r}
+
+```
+
+### **Produtos analisados**
+
+```{r}
+#| echo: false
+#| warning: false
+unique(dados_df3$DESCRICAO)
+VALOR <- dados_df3$TOTAL
+#plot(VALOR, xlab = "", ylab = "Total", 
+    # main = "Gráfico de Dispersão valor de venda")
+```
+
+### **Valor total de vendas por ano**
+
+```{r}
+#| echo: false
+#| warning: false
+
+#print(soma_total_por_data)
+dados_df9 <- dados_df %>% select(DATA,TOTAL)
+# Remove linhas com valores NA em PRECOVENDA
+dados_df9 <- dados_df9[!is.na(dados_df9$TOTAL),]
+
+dados_df9$TOTAL <- as.numeric(gsub(",", ".", as.character(dados_df9$TOTAL)))
+dados_df9$TOTAL <- as.numeric(dados_df9$TOTAL)
+media_preco_por_data <- tapply(dados_df9$TOTAL, dados_df9$DATA, mean)
+
+dados_df9$DATA <- as.character(dados_df9$DATA)
+
+soma_total_por_data <- dados_df9 %>% group_by(DATA) %>% summarise(SOMA_TOTAL = sum(TOTAL, na.rm = TRUE))
+
+# Print the result
+print(soma_total_por_data)
+
+```
+
+### **Valores médios de vendas por ano**
+
+```{r}
+#| echo: false
+#| warning: false
+
+dados_df9$TOTAL <- as.numeric(gsub(",", ".", as.character(dados_df9$TOTAL)))
+
+media_preco_por_data <- tapply(dados_df9$TOTAL, dados_df9$DATA, mean)
+print(media_preco_por_data)
+```
+
+### **Valores médios de vendas por filial**
+
+```{r}
+#| echo: false
+#| warning: false
+# Calcula a média de PRECOVENDA para cada FILIAL
+media_preco_por_filial <- tapply(dados_df3$TOTAL, dados_df3$FILIAL, mean)
+print(media_preco_por_filial)
+
+```
+
+### **Os 10 produtos com o maior valor de vendas**
+
+```{r}
+#| echo: false
+#| warning: false
+dados_df4 <- dados_df %>% select(PROD,DESCRICAO,TOTAL)
+# Remove linhas com valores NA em PRECOVENDA
+dados_df4 <- dados_df4[!is.na(dados_df4$TOTAL),]
+dados_df4$TOTAL <- as.numeric(gsub(",", ".", as.character(dados_df4$TOTAL)))
+
+# Agrupe os dados por produto e calcule a soma das vendas (total_sales) para cada produto
+summarized_data <- dados_df4 %>%
+  group_by(PROD, DESCRICAO) %>%
+  summarise(Total = sum(TOTAL))
+
+sorted_data <- summarized_data %>%
+  arrange(desc(Total))
+
+# Ordene os produtos pela quantidade de vendas em ordem decrescente
+sorted_data <- summarized_data %>%
+  arrange(desc(Total))
+
+# Selecione os top 10 produtos mais vendidos
+top_10_products <- head(sorted_data, 10)
+top_10_products$Total <- sprintf("R$ %.2f", top_10_products$Total)
+
+```
+
+```{r}
+#| echo: false
+#| warning: false
+# Exiba o DataFrame com os top 10 produtos mais vendidos
+print(top_10_products)
+
+```
+
+### **Os 20 produtos mais vendidos**
+
+```{r}
+#| echo: false
+#| warning: false
+# CRIANDO DATAFRAME 5 (PROD, TOTAL)
+library(dplyr)
+dados_df5 <- dados_df %>% select(PROD,DESCRICAO,QT)
+# Remove linhas com valores NA em PRECOVENDA
+dados_df5 <- dados_df5[!is.na(dados_df5$QT),]
+dados_df5$QT <- as.numeric(gsub(",", ".", as.character(dados_df5$QT)))
+
+# Agrupe os dados por produto e calcule a soma das vendas (total_sales) para cada produto
+summarized_data <- dados_df5 %>%
+  group_by(PROD, DESCRICAO) %>%
+  summarise(QUANTIDADE = sum(QT))
+
+# Ordene os produtos pela quantidade de vendas em ordem decrescente
+sorted_data <- summarized_data %>%
+  arrange(desc(QUANTIDADE))
+
+# Selecione os top 20 produtos mais vendidos
+top_20_products <- head(sorted_data, 20)
+
+# Exiba o DataFrame com os top 20 produtos mais vendidos
+print(top_20_products)
+
+```
+
+### **Regras de associação**
+
+```{r}
+#| echo: false
+#| warning: false
+associacaoDADOS <- apriori(dados_df)
+summary(associacaoDADOS)
+```
+
+```{r}
+#| echo: false
+#| warning: false
+plot(VALOR, xlab = "", ylab = "Total", 
+     main = "Gráfico de Dispersão valor de venda")
+```
+
+```{r}
+#| echo: false
+#| warning: false
+# Crie um gráfico de dispersão usando as variáveis circumference e age
+plot(dados_df3$FILIAL, dados_df3$TOTAL, 
+     xlab = "Filial", ylab = "Total", 
+     main = "Gráfico de Dispersão de Filial vs. Total")
+```
+
+### **Gráfico da vendas por filial**
+
+```{r}
+#| echo: false
+#| warning: false
+Filiais <- c("Filial ¨ 6", "Filial   9", "Filial 13")
+dados <- data.frame(Filiais, media_preco_por_filial)
+
+grafico_pizza <- ggplot(dados, aes(x = "", y = media_preco_por_filial, fill = Filiais)) + theme(panel.background = element_rect(fill = "white"),
+        panel.border = element_rect(fill = NA,color = "black",linetype = "dashed", size = 1)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar("y") +
+  theme_void() +
+  theme(legend.position = "left") +
+  ggtitle("Média de Preço por Filial")
+# Exiba o gráfico
+print(grafico_pizza)
+```
+
+### **Gráfico de departamentos com maiores vendas**
+
+```{r}
+#| echo: false
+#| warning: false
+# CRIANDO DATAFRAME 6 (DEPARTAMENTO, QUANTIDADA)
+library(dplyr)
+dados_df6 <- dados_df %>% select(CODEPTO,DESCRICAODEPTO,QT)
+# Remove linhas com valores NA em PRECOVENDA
+dados_df6 <- dados_df6[!is.na(dados_df6$QT),]
+dados_df6$QT <- as.numeric(gsub(",", ".", as.character(dados_df6$QT)))
+
+# Agrupe os dados por produto e calcule a soma das vendas (quantidade) para cada produto
+summarized_data <- dados_df6 %>%
+  group_by(CODEPTO, DESCRICAODEPTO) %>%
+  summarise(QUANTIDADE = sum(QT))
+
+# Ordene os produtos pela quantidade de vendas em ordem decrescente
+sorted_data <- summarized_data %>%
+  arrange(desc(QUANTIDADE))
+
+# Selecione os top 5 produtos mais vendidos
+top_5_products <- head(sorted_data, 5)
+
+# Exiba o DataFrame com os top 5 produtos mais vendidos
+
+DEPTO <- unique(top_5_products$DESCRICAODEPTO)
+dados2 <- data.frame(top_5_products$QUANTIDADE)
+grafico_pizza <- ggplot(top_5_products, aes(x = "", y = QUANTIDADE, fill = DEPTO)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar("y") +
+  theme_void() +
+  theme(legend.position = "left") +
+  ggtitle("TOP 5 DEPARTAMENTOS")
+# Exiba o gráfico
+print(grafico_pizza)
+```
+
+```{r}
+#| echo: false
+#| warning: false
+dados_df7 <- dados_df %>% select(USUARIO,TOTAL)
+# Remove linhas com valores NA em PRECOVENDA
+dados_df7 <- dados_df7[!is.na(dados_df7$TOTAL),]
+dados_df7$TOTAL <- as.numeric(gsub(",", ".", as.character(dados_df7$TOTAL)))
+
+# Agrupe os dados por produto e calcule a soma das vendas (total_sales) para cada produto
+summarized_data <- dados_df7 %>%
+  group_by(USUARIO) %>%
+  summarise(Total = sum(TOTAL))
+
+sorted_data <- summarized_data %>%
+  arrange(desc(Total))
+
+# Ordene os produtos pela quantidade de vendas decrescente/Crescente
+sorted_data <- summarized_data %>%
+  arrange(desc(Total))
+sorted_data_m <- summarized_data %>%
+  arrange((Total))
+
+# Selecione os top 10 produtos mais vendidos
+top_5melhores_vend <- head(sorted_data, 5)
+top_5piores_vend <- head(sorted_data_m, 5)
+#top_5melhores_vend$Total <- sprintf("R$ %.2f", top_5melhores_vend$Total)
+#top_5piores_vend$Total <- sprintf("R$ %.2f", top_5piores_vend$Total)
+```
+
+### **Top 5 melhores vendedores**
+
+```{r}
+#| echo: false
+#| warning: false
+grafico <- ggplot(top_5melhores_vend, aes(x = reorder(USUARIO, Total), y = Total)) +
+  geom_bar(stat = "identity", fill = "green", alpha = 0.6) +
+  geom_text(aes(label = Total), vjust = -0.3) + theme(panel.background = element_rect(fill = "white"),
+        panel.border = element_rect(fill = NA,color = "black",linetype = "dashed", size = 1)) +
+  #coord_flip() +  # Inverte os eixos
+  xlab("Usuários") +
+  ylab("Total") +
+  ggtitle("Top 5 Melhores")
+print(grafico)
+```
+
+### **Top 5 piores vendedores**
+
+```{r}
+#| echo: false
+#| warning: false
+grafico2 <- ggplot(top_5piores_vend, aes(x = reorder(USUARIO, Total), y = Total)) +
+  geom_bar(stat = "identity", fill = "red", alpha = 0.6) +
+  geom_text(aes(label = Total), vjust = -0.3) + theme(panel.background = element_rect(fill = "white"),
+        panel.border = element_rect(fill = NA,color = "black",linetype = "dashed", size = 1)) +
+  #coord_flip() +  # Inverte os eixos
+  xlab("Usuários") +
+  ylab("Total") +
+  ggtitle("Top 5 Piores")
+print(grafico2)
+```
+
+### **Gráfico de densidade**
+
+```{r}
+#| echo: false
+#| warning: false
+dados_df %>% ggplot(aes(x = FILIAL)) + geom_density() +
+  theme(panel.background = element_rect(fill = "white"),
+        panel.border = element_rect(fill = NA,color = "black",linetype = "dashed", size = 1)) 
+```
+
+### **Gráfico interativo - Ano x Valor total**
+
+```{r}
+#| echo: false
+#| warning: false
+#library(ggplot2)
+gg <- ggplot(dados_df9, aes(x = DATA, y = TOTAL, text = paste("Data: ", DATA, "<br>Total: ", TOTAL))) +
+  geom_point() +
+  labs(x = "Data", y = "Total") +
+  theme(panel.background = element_rect(fill = "white"),
+        panel.border = element_rect(fill = NA,color = "black",linetype = "dashed", size = 1))
+
+gg_inter <- ggplotly(gg)
+
+gg_inter
+```
+
+### **Gráfico interativo - Filial x Produto x Qt**
+
+```{r}
+#| echo: false
+#| warning: false
+dados_df10 <- dados_df %>% select(PROD,DATA,TOTAL,USUARIO,FILIAL,QT)
+dados_df10$FILIAL <-  as.factor(dados_df10$FILIAL)
+dados_df10$PROD <-  as.integer(dados_df10$PROD)
+gg2 <- ggplot(dados_df10, aes(x = PROD,y = QT , color = FILIAL)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) + 
+  theme(panel.background = element_rect(fill = "white"),
+        panel.border = element_rect(fill = NA,color = "black",linetype = "dashed", size = 1))
+
+gg3 <- ggplotly(gg2)
+gg3
+
+```
+
+### **Desenho da arvore de decisão**
+
+```{r}
+#| echo: false
+#| warning: false
+# Pré-processamento
+library(rpart.plot)
+dados_dfParticao = createDataPartition(1:nrow(dados_df), p= .7) # cria a partição 70-30 1:nrow toda a base, de 1:50 as 50 primeiras linhas.
+treinodados_df = dados_df[dados_dfParticao$Resample1, ] # treino Os 70%
+testedados_df = dados_df[-dados_dfParticao$Resample1, ] # - treino = teste a base sem os 70% "-"
+
+# Mineração e predição com Árvores de Decisão
+## Árvore de Decisão
+testedados_df$TOTAL <- as.numeric(gsub(",", ".", as.character(testedados_df$TOTAL)))
+testedados_df$TOTAL <- as.numeric(gsub(",", ".", as.character(testedados_df$TOTAL)))
+
+dados_df_RPART <- train(
+  FILIAL  ~  PROD + QT + DATA + SITTRIBUT + CODEPTO , 
+  data = treinodados_df, 
+  method = "rpart", 
+  trControl = trainControl(method = "cv"))
+
+```
+
+```{r}
+#| echo: false
+#| warning: false
+rattle::fancyRpartPlot(dados_df_RPART$finalModel) # desenho da árvore
+```
+
+### **Importância das variáveis**
+
+```{r}
+#| echo: false
+#| warning: false
+plot(varImp(dados_df_RPART)) # importância das variáveis
+```
+
+```{r}
+#| echo: false
+#| warning: false
+varImp(dados_df_RPART, scale = T) # importância de cada variável
+```
+
+```{r}
+#| echo: false
+#| warning: false
+predicaoTree = predict(dados_df_RPART, newdata = testedados_df)
+```
+
+### **Teste de performance da árvore condicional**
+
+```{r}
+#| echo: false
+#| warning: false
+postResample(testedados_df[ , 10], predicaoTree)
+```
+
+## **Conclusão**
+
+A análise dos dados de vendas dos primeiros dias de janeiro nos anos de 2020, 2021, 2022 e 2023 mostrou tendências de crescimento para todos os produtos. Com base nessas tendências, projetamos que as vendas para o ano de 2024 continuarão a crescer de forma moderada para os produtos analisados.
+
+Esta projeção pode ser útil para a equipe de vendas e gestão de inventário na tomada de decisões estratégicas para o próximo ano. É importante ressaltar que a precisão das projeções pode variar com base em fatores econômicos e de mercado que não foram considerados nesta análise.
+
+![](fafire_logo.JPG){fig-align="left" width="100" height="29"}
